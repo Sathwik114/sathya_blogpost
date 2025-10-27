@@ -1,0 +1,12 @@
+{% extends 'layouts/app.html' %}
+
+{% block content %}
+<h2>Create New Post</h2>
+<form method="post">
+  {% csrf_token %}
+  <input type="text" name="title" placeholder="Title" required><br><br>
+  <textarea name="content" placeholder="Write your post..." required></textarea><br><br>
+  <button type="submit">Post</button>
+</form>
+<a href="{% url 'dashboard' %}">Back to Dashboard</a>
+{% endblock %}
