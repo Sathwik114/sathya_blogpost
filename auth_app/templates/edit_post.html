@@ -1,0 +1,58 @@
+{% extends 'layouts/app.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">✏️ Edit Post</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label class="font-weight-bold">Title</label>
+                            <input type="text" name="title" class="form-control" 
+                                   value="{{ post.title }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold">Content</label>
+                            <textarea name="content" class="form-control" rows="6" required>{{ post.content }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold">Current Image</label>
+                            {% if post.image %}
+                                <div class="mb-2">
+                                    <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 200px;">
+                                </div>
+                            {% endif %}
+                            <input type="file" name="image" class="form-control-file" accept="image/*">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold">Current Video</label>
+                            {% if post.video %}
+                                <div class="mb-2">
+                                    <video class="w-100" style="max-height: 200px;" controls>
+                                        <source src="{{ post.video.url }}" type="video/mp4">
+                                    </video>
+                                </div>
+                            {% endif %}
+                            <input type="file" name="video" class="form-control-file" accept="video/*">
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Update Post</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

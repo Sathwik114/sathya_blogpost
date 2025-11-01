@@ -2,54 +2,156 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-3">Welcome, {{ request.user.username }} 👋</h1>
-    <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
-    <a href="{% url 'create_post' %}" class="btn btn-primary">Create New Post</a>
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
 
-    <hr>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">📝 Blog Posts</h1>
+        {% if request.user.is_authenticated %}
+            <div>
+                <span class="badge badge-primary badge-pill p-2 mr-2">👋 Hello, {{ request.user.username }}</span>
+                <a href="{% url 'create_post' %}" class="btn btn-primary">➕ Create Post</a>
+            </div>
+        {% endif %}
+    </div>
 
     {% if posts %}
         {% for post in posts %}
-        <div class="card mb-4">
+        <div class="card mb-4 shadow-sm">
             <div class="card-body">
-                <h4 class="card-title">{{ post.title }}</h4>
+                <div class="d-flex justify-content-between align-items-start">
+                    <h4 class="card-title text-primary">{{ post.title }}</h4>
+                    {% if request.user.is_authenticated and post.user == request.user %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                            ⚙️
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'edit_post' post.id %}">✏️ Edit</a>
+                            <a class="dropdown-item text-danger" href="{% url 'delete_post' post.id %}">🗑️ Delete</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
                 <p class="card-text">{{ post.content }}</p>
-                <small class="text-muted">
-                    Posted by <b>{{ post.author.username }}</b> on {{ post.created_at|date:"M d, Y H:i" }}
-                </small>
+                
+                {% if post.image %}
+                <div class="mb-3">
+                    <img src="{{ post.image.url }}" class="img-fluid rounded" alt="Post image" style="max-height: 400px;">
+                </div>
+                {% endif %}
+                
+                {% if post.video %}
+                <div class="mb-3">
+                    <video class="w-100 rounded" controls style="max-height: 400px;">
+                        <source src="{{ post.video.url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center text-muted mb-3">
+                    <small>
+                        👤 Posted by <strong>@{{ post.user.username }}</strong> 
+                        on {{ post.created_at|date:"M d, Y H:i" }}
+                    </small>
+                    <small>
+                        ❤️ {{ post.post_likes.count }} likes • 
+                        💬 {{ post.comments.count }} comments
+                    </small>
+                </div>
+
                 <hr>
 
                 <!-- Like Button -->
-                <form action="{% url 'like_post' post.id %}" method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-success btn-sm">
-                        👍 Like ({{ post.total_likes }})
-                    </button>
-                </form>
+                {% if request.user.is_authenticated %}
+                <div class="mb-3">
+                    <form action="{% url 'like_post' post.id %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            {% if request.user in post.post_likes.all %}
+                                ❤️ Unlike
+                            {% else %}
+                                🤍 Like
+                            {% endif %}
+                            ({{ post.post_likes.count }})
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    🔒 <a href="{% url 'login' %}" class="alert-link">Login</a> to like and comment on posts!
+                </div>
+                {% endif %}
 
                 <!-- Comments Section -->
-                <div class="mt-3">
-                    <h6>Comments:</h6>
+                <div class="comments-section">
+                    <h6>💬 Comments ({{ post.comments.count }}):</h6>
                     {% for comment in post.comments.all %}
-                        <p><strong>{{ comment.user.username }}</strong>: {{ comment.text }}</p>
+                        <div class="comment bg-light p-3 rounded mb-2">
+                            <div class="d-flex justify-content-between">
+                                <strong>@{{ comment.user.username }}</strong>
+                                <small class="text-muted">{{ comment.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-0 mt-1">{{ comment.text }}</p>
+                        </div>
                     {% empty %}
-                        <p>No comments yet.</p>
+                        <p class="text-muted">No comments yet. Be the first to comment!</p>
                     {% endfor %}
                 </div>
 
                 <!-- Add Comment Form -->
-                <form action="{% url 'comment_post' post.id %}" method="post" class="mt-2">
+                {% if request.user.is_authenticated %}
+                <form action="{% url 'comment_post' post.id %}" method="post" class="mt-3">
                     {% csrf_token %}
                     <div class="input-group">
-                        <input type="text" name="comment" placeholder="Add a comment..." class="form-control" required>
-                        <button type="submit" class="btn btn-secondary">Comment</button>
+                        <input type="text" name="comment" placeholder="Write a comment..." class="form-control" required>
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary">Comment</button>
+                        </div>
                     </div>
                 </form>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <p>No posts yet. <a href="{% url 'create_post' %}">Create one!</a></p>
+        <div class="text-center py-5">
+            <h3 class="text-muted">📭 No posts yet</h3>
+            <p class="text-muted">Be the first to create a post!</p>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'create_post' %}" class="btn btn-primary btn-lg">Create Your First Post</a>
+            {% else %}
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Join Now to Post</a>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    .comment {
+        border-left: 4px solid #007bff;
+    }
+    .btn {
+        border-radius: 20px;
+    }
+</style>
 {% endblock %}
